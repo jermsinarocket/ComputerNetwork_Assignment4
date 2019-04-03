@@ -1,6 +1,6 @@
 # CSED353 Computer Network Assignment 4 (Spring 2019, POSTECH)
 
-(WIP) - waiting for assignment release
+Developing an Internet Text, Voice and Video chatting program using sockets.
 
 ## Language(s) used
 * Python
