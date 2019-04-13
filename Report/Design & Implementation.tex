@@ -36,12 +36,12 @@
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{Assignment 4}
-\lhead{Design \& Implementation: Internet Video, Video, Voice \& Text Chatting Program}
+\lhead{Design \& Implementation: Internet Video, Voice \& Text Chatting Program}
 \rfoot{Page \thepage}
 
  
 \begin{document}
-\title{\vspace{-1.0cm}\textbf{Design \& Implemenation: \linebreak Internet Voice \& Text Chatting Program}}
+\title{\vspace{-1.0cm}\textbf{Design \& Implemenation: \linebreak Internet Video, Voice \& Text Chatting Program}}
 \author{
   \textbf{Tan Wei Xuan (49003140)}\\
   \texttt{tanweixuan@postech.ac.kr}
@@ -53,7 +53,7 @@
 \maketitle
 
 \section{Project Overview}
-The\textbf{ Internet Text and Voice Messaging Program} that I have implemented is a \textbf{Multi-threaded Chat Application} that utilises the Transmission Control Protocol \textit{(TCP)} and allows for mutiple clients to send/receive text and voice messages over a server, to one another, at the same time.  We switched from using \textit{Java} to \textit{Python} as \textit{Python} provides more API support for voice chat. The source code files are as follow:
+The\textbf{ Internet Video, Voice and Text Messaging Program} that I have implemented is a \textbf{Multi-threaded Chat Application} that utilises the Transmission Control Protocol \textit{(TCP)} and allows for mutiple clients to send/receive text, voice messages as well as a video stream over a server, to one another, at the same time. The source code files are as follow:
 \begin{enumerate}
 	\item \textbf{Server Files}
 \begin{itemize}
@@ -107,177 +107,213 @@ $ pip install opencv-python
 \end{mdframed}
 \end{enumerate}
 
-\section{Implementation - Text Chat}
+\section{Implementation - Video Chat}
 
-\subsection{Client - Receving Text }
-Below is the handler for how a client receives text sent from other clients through the server. The Client is binded to the Server Text Port on \textit{2222}.
-\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
-\begin{lstlisting}
-#Client.py
-def receive_text():
-	while True:
-		try:
-			msg = client_socket_text.recv(BUFSIZ).decode("utf8")
-			print(msg)
-		except OSError:
-			break
-\end{lstlisting}
-\end{mdframed}
-
-\subsection{Client - Sending Text}
-Below is the handler for how a client sent a text to the server and to other clients on the server. The Text and Video Port connection will be closed if the Client inputs \textit{"quit"}.
-\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
-\begin{lstlisting}
-#Client.py
-def send_text():
-	while True:
-		msg = input()
-		print('\033[A\033[A')
-		client_socket_text.send(bytes(msg, "utf8"))
-		if msg == "{quit}":
-			client_socket_text.close()
-			client_socket_voice.close()
-			quit()
-\end{lstlisting}
-\end{mdframed}
-
-\subsection{Server - Accept Connection to Text Port}
-Below is the handler for how the server accepts a connection from the client onto the Text Port. The Text Port that the client connect to is \textit{2222}. Whenever a client is connected to the port, a thread if attached to the client to handle it.
+\subsection{Server - Handling Video }
+Below is the handler for how a server distribute the video data that is being received from one client to another. The Video port on the server is \textit{1026}. 
 \begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
 \begin{lstlisting}
 #Server.py
-#For handling client's connection to TEXT PORT, assign a thread for each connection
-def accept_text():
-	while True:
-		client, client_address = SERVER_TEXT.accept()
-		print("%s:%s has connected from ." % client_address)
-		client.send(bytes("Enter your name: ", "utf8"))
-		addresses_text[client] = client_address
-		Thread(target=handle_client_text, args=(client,)).start()
+def handle_client_video(client):
+	"""
+	Handles Video from the given socket.
+ 	"""
+	# Receive Video
+	clients_video[client] = 1
+	while client in clients_video:
+            ttlrec = 0
+            metarec = 0
+            msgArray = []
+            metaArray = []
+
+            while metarec < 8:
+                chunk = client.recv(8 - metarec)
+                metaArray.append(chunk)
+                metarec += len(chunk)
+
+            length = int(chunk.decode("utf8"))
+
+            while ttlrec < length:
+                chunk = client.recv(length-ttlrec)
+                if chunk == '' :
+                    raise RuntimeError("Socket Connection has broken")
+                msgArray.append(chunk)
+                ttlrec += len(chunk)
+
+            broadcast(b''.join(metaArray + msgArray),dtype="video", sd=client)
 
 \end{lstlisting}
 \end{mdframed}
 
-\subsection{Server - Handling Text}
-Below is the handler for how the Server recevies a message from a client and subsequently broadcasts the message to all the other clients on the server.
+\subsection{Client - GUI}
+We utilised the \textit{Tkinter module}, an inbuilt GUI implemenation of Python's library to serve as the Graphic User Interface for our program. The video stream as well as the chat window for exchanging text messages will all be displayed on the GUI.
+\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
+\begin{lstlisting}
+#Client.py
+#TKinter Settings
+top = tkinter.Tk()
+top.title("Internet Voice,Video and Text Chatting Programme")
+
+video_frame = tkinter.Frame(top)
+video_frame.pack(side=tkinter.TOP)
+
+messages_frame = tkinter.Frame(top)
+messages_frame.pack(side=tkinter.TOP)
+
+button_frame = tkinter.Frame(top)
+button_frame.pack(side=tkinter.TOP)
+
+my_msg = tkinter.StringVar()
+my_msg.set("Enter your Name")
+
+scrllBar = tkinter.Scrollbar(messages_frame)
+
+entry_field = tkinter.Entry(button_frame, textvariable=my_msg)
+entry_field.bind("<Return>", send_text)
+entry_field.pack(side=tkinter.LEFT, padx = 10)
+
+send_button = tkinter.Button(button_frame, text="Send", command = send_text)
+send_button.pack(side=tkinter.LEFT, padx = 10)
+
+msg_list = tkinter.Listbox(messages_frame, height = 15, width =50, yscrollcommand = scrllBar.set)
+scrllBar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+msg_list.pack(side=tkinter.TOP, fill=tkinter.BOTH)
+\end{lstlisting}
+\end{mdframed}
+
+\subsection{Client - Video Capture}
+We utilised the OpenCV library for the capturing of the video stream through the use of the client's webcam. The frames being captured through the webcam are treated as \textbf{Images}
+\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
+\begin{lstlisting}
+#Client.py
+#Capture for Webcam
+cap = cv2.VideoCapture(0)
+
+#Work around in case webcam is not opened
+if cap.read() == False:
+	cap.open()
+
+\end{lstlisting}
+\end{mdframed}
+
+\subsection{Client- Sending Video}
+The frame (image) being captured from the webcam is subsequently (in real-time) being sent to the server through the handler below.
 \begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
 \begin{lstlisting}
 #Server.py
-def handle_client_text(client):
-  #Handles a message from the given socket.
-	#Receive Message
-	name = client.recv(BUFSIZ).decode("utf8")
-	welcome = 'Welcome %s! Type {quit} to exit the chat room.' % name
-	client.send(bytes(welcome, "utf8"))
-	msg = "%s has entered the chat room!" % name
-	broadcast(bytes(msg, "utf8"))
-	clients_text[client] = name
+#Send Video to the server
+def send_video():
+	global cap
 
-	while True:
-		msg = client.recv(BUFSIZ)
-		if msg != bytes("{quit}", "utf8"):
-			#Append name to front of message
-			broadcast(msg, name + ">> ")
+	while not stop_video.is_set():
+		ret_val, img = cap.read()
+		img = cv2.resize(img, (360,360))
+
+		cv2_im = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+		pil_im = Image.fromarray(cv2_im)
+		b_io = io.BytesIO()
+		pil_im.save(b_io,'jpeg')
+		framestr = b_io.getvalue()
+
+		ttlsent = 0
+		metasent = 0
+		length = len(framestr)
+		lengthstr = str(length).zfill(8)
+
+		while metasent < 8:
+			sent = client_socket_video.send(lengthstr[metasent::].encode("utf8"))
+			if sent == 0:
+				raise RuntimeError("Socket Connection has broken")
+			metasent += sent
+
+		while ttlsent < length:
+			sent = client_socket_video.send(framestr[ttlsent::])
+			if sent == 0:
+				raise RuntimeError("Socket Connection has broken")
+			ttlsent += sent
+
+\end{lstlisting}
+\end{mdframed}
+
+\subsection{Client - Displaying Video Stream}
+The GUI of our program displays two video streams on it. One being the client's own video capture and the other being the video stream being received from the other clients on the server. This handler reads the frame (image) from the client's own webcam and displays it on the GUI.
+\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
+\begin{lstlisting}
+#Client.py
+#Cam Capture to Screen
+def show_my_video():
+	global cap
+	panel = None
+
+	while not stop_video.is_set():
+		ret_val, img = cap.read()
+
+		img = cv2.resize(img, (120, 120))
+
+		image = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+		image = Image.fromarray(image)
+		image = ImageTk.PhotoImage(image)
+
+		if panel is None:
+			panel = tkinter.Label(image=image)
+			panel.image = image
+			panel.place(height=110,width=110,x=256,y=5)
 		else:
-			client.send(bytes("{quit}", "utf8"))
-			client.close()
-			erase_client(client)
-			broadcast(bytes("%s has left the chat room." % name, "utf8"))
-			break
-
-\end{lstlisting}
-\end{mdframed}
-
-
-\section{Implementation - Voice Chat}
-We utlisied the PyAudio library to implement the voice chat portion of our application.
-
-\subsection{Client - Declaring the Input/Output Streams}
-We have to declare the Input and Output Stream for sending and receiving audio on our client. \textit{stream send} is for sending our voice input to the server, on onto the other clients on the server. \textit{stream receive} is for receving and playing the voice output from the server, which is sent from the other clients on the server.
-\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
-\begin{lstlisting}
-#Client.py
-#For sending stream over to the server
-stream_send = p.open(
-	format=pyaudio.paInt16,
-	channels=CHANNELS,
-	rate=RATE,
-	input=True,
-	frames_per_buffer=CHUNK)
-
-#For receving stream from the server and playing the stream
-stream_recv = p.open(
-	format=p.get_format_from_width(WIDTH),
-	channels=CHANNELS,
-	rate=RATE,
-	output=True,
-	frames_per_buffer=CHUNK)
-
-\end{lstlisting}
-\end{mdframed}
-
-\subsection{Client - Sending/Receiving  Audio}
-The client have to handles both sending/receiving voice simulatanuously. The below two functions are for receiving and playing the voice sent from the server and for sending voice inputs from the client to the server. The Client is binded to the Server Voice Port on \textit{55555}.
-\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
-\begin{lstlisting}
-#Client.py
-
-# For Receiving Voice
-def receive_voice():
-	while True:
-		try:
-			data = client_socket_voice.recv(BUFSIZ)
-			stream_recv.write(data)
-		except OSError:
-			break
-
-# Send voice to the server
-def send_voice():
-	while True:
-		try:
-			data = stream_send.read(CHUNK)
-			client_socket_voice.sendall(data)
-		except OSError:
-			break
+			panel.configure(image=image)
+			panel.image = image
 clientSocket.close();
 \end{lstlisting}
 \end{mdframed}
 
-\subsection{Server - Accept Connection to Voice Port}
-Below is the handler for how the server accepts a connection from the client onto the Voice Port. The Voice Port that the client connect to is \textit{55555}. Whenever a client is connected to the port, a thread if attached to the client to handle it.
 
+\subsection{Client - Receving Video}
+The video data that is being recevied by the client throgh the server is handled through the function below. The video data received will be displayed on the GUI.
 \begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
 \begin{lstlisting}
-#Server.py
- For handling client's connection to VOICE PORT, assign a thread for each connection
-def accept_voice():
-	while True:
-		client, client_address = SERVER_VOICE.accept()
-		addresses_voice[client] = client_address
-		Thread(target=handle_client_voice, args=(client,)).start()
-\end{lstlisting}
-\end{mdframed}
-
-
-\subsection{Server - Handling Voice}
-Below is the handler for how the Server recevies a voice message from a client and subsequently broadcasts the message to all the other clients on the server.
-\begin{mdframed}[backgroundcolor=light-gray, roundcorner=30pt,leftmargin=1, rightmargin=1, innerleftmargin=5, innertopmargin=-3,innerbottommargin=5, outerlinewidth=1, linecolor=light-gray]
-\begin{lstlisting}
-#Server.py
-def handle_client_voice(client):
-	"""
-	Handles Voice from the given socket.
- 	"""
-	# Receive Voice
-	clients_voice[client] = 1
-
-	while client in clients_voice:
+#Client.py
+# For Receiving Video
+def receive_video():
+	global panel
+	while not stop_video.is_set():
 		try:
-			data = client.recv(BUFSIZ)
-			broadcast(data, dtype='voice')
-		except Exception as _:
-			client.close()
-			del clients_voice[client]
+			ttlrec = 0
+			metarec = 0
+
+			msgArray = []
+			metaArray = []
+
+			while metarec < 8:
+				chunk = client_socket_video.recv(8 - metarec).decode("utf8")
+				if chunk == '':
+					raise RuntimeError("Socket Connection has been broken")
+				metaArray.append(chunk)
+				metarec += len(chunk)
+
+			lengthstr = ''.join(metaArray)
+			length = int(lengthstr)
+
+			while ttlrec < length:
+				chunk = client_socket_video.recv(length - ttlrec)
+				if chunk == '':
+					raise RuntimeError("Socket Connection has been broken")
+				msgArray.append(chunk)
+				ttlrec += len(chunk)
+
+			frame = b''.join(msgArray)
+			pil_bytes = io.BytesIO(frame)
+			pil_img = Image.open(pil_bytes)
+			img = ImageTk.PhotoImage(pil_img)
+
+			if panel is None:
+				panel = tkinter.Label(video_frame, image =img)
+				panel.image = img
+				panel.pack(side=tkinter.TOP, expand = True)
+			else:
+				panel.configure(image = img)
+				panel.image = img
+
+		except OSError:
+			break
 
 \end{lstlisting}
 \end{mdframed}
@@ -289,13 +325,17 @@ def handle_client_voice(client):
   \item In the terminal, run the command \textbf{\textit{python Server.py}} to start the \textbf{server}.
   \newline
   \includegraphics{server}
-  \item In the terminal, run the command \textbf{\textit{python Client.py \#hostname }}to start the \textbf{client}. (Run \textit{\textbf{n}} times to start \textit{\textbf{n}} clients). By default the host name will be \textbf{127.0.0.1}
+  \item In the terminal, run the command \textbf{\textit{python Client.py \#hostname }}to start the \textbf{client}. By default the host name will be \textbf{127.0.0.1}. The GUI will automatically be opened.
   \newline
   \includegraphics{client}
+  \item Enter your \textbf{name} in the textbox and press the \textit{"Send"} button to begin using the text chat function.
+  \newline
+  \includegraphics{name}
    \item When more than 1 user has connected to the server, both \textbf{Video} and \textbf{Voice} will be automatically enabled. You do not have to input any additional commands to enable them. \textbf{Video, Voice and Text} can be sent/received simultaneously.
+   \newline
+  \includegraphics{name}
    \item In the \textbf{GUI Text Box}, type \textbf{\{quit\}} to exit from the server.
    \newline
-   \includegraphics{exit}
 \end{enumerate}
 
 \section{Limitations}

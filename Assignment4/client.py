@@ -226,9 +226,6 @@ entry_field.pack(side=tkinter.LEFT, padx = 10)
 send_button = tkinter.Button(button_frame, text="Send", command = send_text)
 send_button.pack(side=tkinter.LEFT, padx = 10)
 
-send_button = tkinter.Button(button_frame, text="test", command = send_text)
-send_button.pack(side=tkinter.LEFT, padx = 10)
-
 msg_list = tkinter.Listbox(messages_frame, height = 15, width =50, yscrollcommand = scrllBar.set)
 scrllBar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 msg_list.pack(side=tkinter.TOP, fill=tkinter.BOTH)
