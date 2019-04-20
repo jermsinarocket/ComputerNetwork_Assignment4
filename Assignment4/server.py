@@ -44,7 +44,7 @@ def handle_client_text(client):
     """
 	# Receive Message
 	name = client.recv(BUFSIZ).decode("utf8")
-	welcome = 'Welcome %s! Type {quit} to exit the chat room.' % name
+	welcome = "Welcome %s! Type {quit} to exit the chat room." % name
 	client.send(bytes(welcome, "utf8"))
 	msg = "%s has entered the chat room!" % name
 	broadcast(bytes(msg, "utf8"))
@@ -152,9 +152,9 @@ ADDR_VIDEO = (HOST, PORT_VIDEO) # Bindings for text socket
 
 
 """
-Initiates the chat server.
+Initiates the server.
 """
-# establish server socket to listen on the given port
+# Establish all server sockets to listen on the given ports
 SERVER_TEXT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 SERVER_TEXT.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 SERVER_TEXT.bind(ADDR_TEXT)
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         #Start accepting connection to Video Port
         ACCEPT_THREAD_VIDEO = Thread(target=accept_video()).start()
 
-        #Join the voice and text threads with the main thread
+        #Join the vidoe,voice and text threads with the main thread
         #allow main thread to stop executing until execution of voice,video and text threads are coomplete
         ACCEPT_THREAD_VOICE.join()
         ACCEPT_THREAD_TEXT.join()

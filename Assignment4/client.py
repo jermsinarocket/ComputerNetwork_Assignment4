@@ -141,7 +141,6 @@ def send_voice():
 		except OSError:
 			break
 
-
 #Send Video to the server
 def send_video():
 	global cap
@@ -196,7 +195,7 @@ def show_my_video():
 		if panel is None:
 			panel = tkinter.Label(image=image)
 			panel.image = image
-			panel.place(height=110,width=110,x=256,y=5)
+			panel.place(height=110,width=110,x=290,y=5)
 		else:
 			panel.configure(image=image)
 			panel.image = image
@@ -226,7 +225,7 @@ entry_field.pack(side=tkinter.LEFT, padx = 10)
 send_button = tkinter.Button(button_frame, text="Send", command = send_text)
 send_button.pack(side=tkinter.LEFT, padx = 10)
 
-msg_list = tkinter.Listbox(messages_frame, height = 15, width =50, yscrollcommand = scrllBar.set)
+msg_list = tkinter.Listbox(messages_frame, height = 15, width = 50, yscrollcommand = scrllBar.set)
 scrllBar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 msg_list.pack(side=tkinter.TOP, fill=tkinter.BOTH)
 
@@ -271,7 +270,7 @@ Attempts to connect to the server Video Port
 client_socket_video = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket_video.connect(ADDR_VIDEO)
 
-
+#Start all the threads
 receive_text_thread = Thread(target=receive_text).start()
 
 receive_voice_thread = Thread(target=receive_voice).start()
